@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trafik İşareti Tanıma</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .upload-container {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        #preview {
+            max-width: 300px;
+            margin: 20px auto;
+        }
+        #result {
+            margin: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Trafik İşareti Tanıma Sistemi</h1>
+    
+    <div class="upload-container">
+        <h3>Trafik işareti fotoğrafı yükleyin</h3>
+        <input type="file" id="imageInput" accept="image/*">
+    </div>
+
+    <img id="preview" style="display: none;">
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Resmi önizleme
+                const preview = document.getElementById('preview');
+                preview.style.display = 'block';
+                preview.src = URL.createObjectURL(file);
+
+                // Resmi sunucuya gönder
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.style.display = 'block';
+                    
+                    if (data.error) {
+                        resultDiv.className = 'error';
+                        resultDiv.textContent = 'Hata: ' + data.error;
+                    } else {
+                        resultDiv.className = 'success';
+                        resultDiv.innerHTML = `
+                            <h3>Sonuç:</h3>
+                            <p>Tespit edilen işaret: ${data.class}</p>
+                            <p>Güven oranı: ${(data.confidence * 100).toFixed(2)}%</p>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.style.display = 'block';
+                    resultDiv.className = 'error';
+                    resultDiv.textContent = 'Bir hata oluştu: ' + error.message;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
